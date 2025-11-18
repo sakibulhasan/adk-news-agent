@@ -42,7 +42,8 @@ The system uses a two-tier agent architecture:
 
 4. **Add your Gemini API key** to the `.env` file:
    ```
-   GEMINI_API_KEY=your_api_key_here
+   GOOGLE_GENAI_USE_VERTEXAI=0
+   GOOGLE_API_KEY=your_api_key_here
    ```
 
    > To get a Gemini API key, visit: https://makersuite.google.com/app/apikey

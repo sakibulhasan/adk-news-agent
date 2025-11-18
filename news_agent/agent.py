@@ -16,7 +16,7 @@ from google.adk.tools.agent_tool import AgentTool
 from google.adk.sessions import Session
 
 # --- 1. Environment Setup ---
-# Load environment variables (like GEMINI_API_KEY) from the .env file
+# Load environment variables (like GOOGLE_API_KEY) from the .env file
 load_dotenv()
 
 # --- 2. Define the Specialized Sub-Agent (The "Tool") ---
