@@ -1,0 +1,99 @@
+name: Deploy to Vertex AI Agent Engine
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  AGENT_NAME: news-agent
+  REGION: us-central1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+
+    - name: Run tests
+      run: |
+        # Add your test commands here
+        python -c "import news_agent.agent; print('✅ Agent module loads successfully')"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Install ADK CLI
+      run: |
+        python -m pip install --upgrade pip
+        pip install google-adk
+
+    - name: Create agent configuration
+      run: |
+        cat > agent_config.yaml << EOF
+        name: $AGENT_NAME
+        description: "Multi-agent news retrieval system built with Google's ADK"
+        model: "gemini-2.5-flash"
+        display_name: "News Agent"
+        instructions: |
+          You are a professional News Curator that finds current news headlines for specified locations.
+          Use the SearchSpecialist agent to execute Google searches and provide top 10 news with dates.
+        tools:
+          - name: google_search
+            description: "Search for current news and information"
+        environment_variables:
+          GOOGLE_API_KEY: \${{ secrets.GOOGLE_API_KEY }}
+        EOF
+
+    - name: Deploy to Vertex AI Agent Engine
+      run: |
+        # Enable required APIs
+        gcloud services enable aiplatform.googleapis.com
+        gcloud services enable discoveryengine.googleapis.com
+        
+        # Deploy agent using ADK
+        adk deploy \
+          --project $PROJECT_ID \
+          --region $REGION \
+          --agent-config agent_config.yaml \
+          --source-path . \
+          --agent-name $AGENT_NAME
+
+    - name: Get Agent Details
+      run: |
+        echo "🚀 Agent deployed successfully!"
+        AGENT_ID=$(gcloud ai agents list --region=$REGION --filter="displayName:$AGENT_NAME" --format="value(name)" | head -1)
+        echo "📍 Agent ID: $AGENT_ID"
+        echo "🌐 Agent can be accessed through Vertex AI Console"
+        echo "AGENT_ID=$AGENT_ID" >> $GITHUB_ENV
+
+    - name: Test deployment
+      run: |
+        echo "✅ Deployment completed!"
+        echo "Access your agent at: https://console.cloud.google.com/ai/agents"

@@ -1,0 +1,40 @@
+name: news-agent
+description: "Multi-agent news retrieval system built with Google's Agent Development Kit (ADK)"
+model: "gemini-2.5-flash"
+display_name: "News Agent"
+instructions: |
+  You are a professional News Curator that finds the top 10 most current and relevant news headlines 
+  for the city or country provided by the user.
+
+  Execution Steps:
+  1. Identify the location from the user's query.
+  2. Use the SearchSpecialist agent to execute Google Search queries for current news.
+  3. Synthesize the raw search results into a clear, concise, and numbered list of the top 10 headlines.
+  4. For EACH headline, include the date of occurrence if available. Format: "[Date] - Headline text".
+  5. If a date is not available, indicate it as "[Date unknown] - Headline text".
+  6. Only respond with the synthesized news report.
+  7. If no location is provided, politely ask the user for one.
+
+tools:
+  - name: google_search
+    description: "Search for current news and information using Google Search"
+
+agents:
+  - name: SearchSpecialist
+    description: "A specialist agent that executes Google Search queries for current events"
+    model: "gemini-2.5-flash"
+    instructions: |
+      You are a specialist in using Google Search to find current, trending information.
+      When asked for news about an area, use the 'google_search' tool precisely.
+      Formulate search queries like: 'top 10 news headlines for [Location] today'.
+      Return raw search results with any available date information for processing.
+    tools:
+      - name: google_search
+
+environment_variables:
+  GOOGLE_API_KEY: "${GOOGLE_API_KEY}"
+  GOOGLE_GENAI_USE_VERTEXAI: "0"
+
+deployment:
+  region: "us-central1"
+  project_id: "${PROJECT_ID}"
