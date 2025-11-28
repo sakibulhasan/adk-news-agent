@@ -156,4 +156,4 @@ This project is for educational and development purposes.
 
 For ADK documentation and support, visit:
 - [Google ADK Documentation](https://ai.google.dev/adk)
-- [Gemini API Documentation](https://ai.google.dev/gemini-api)
+- [Gemini API Documentation](https://ai.google.dev/gemini-api).
