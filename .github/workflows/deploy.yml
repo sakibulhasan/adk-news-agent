@@ -1,4 +1,4 @@
-name: Deploy to Vertex AI Agent Engine
+name: Deploy ADK Agent to Cloud Run
 
 on:
   push:
@@ -8,8 +8,9 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  AGENT_NAME: news-agent
+  SERVICE_NAME: news-agent
   REGION: us-central1
+  IMAGE_NAME: news-agent
 
 jobs:
   test:
@@ -58,57 +59,51 @@ jobs:
         gcloud auth list
         gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+    - name: Configure Docker for GCP
+      run: gcloud auth configure-docker
 
-    - name: Install ADK CLI
+    - name: Enable required APIs
       run: |
-        python -m pip install --upgrade pip
-        pip install google-adk
-
-    - name: Create agent configuration
-      run: |
-        cat > agent_config.yaml << EOF
-        name: $AGENT_NAME
-        description: "Multi-agent news retrieval system built with Google's ADK"
-        model: "gemini-2.5-flash"
-        display_name: "News Agent"
-        instructions: |
-          You are a professional News Curator that finds current news headlines for specified locations.
-          Use the SearchSpecialist agent to execute Google searches and provide top 10 news with dates.
-        tools:
-          - name: google_search
-            description: "Search for current news and information"
-        environment_variables:
-          GOOGLE_API_KEY: \${{ secrets.GOOGLE_API_KEY }}
-        EOF
-
-    - name: Deploy to Vertex AI Agent Engine
-      run: |
-        # Enable required APIs (if not already enabled)
         echo "Enabling required APIs..."
-        gcloud services enable aiplatform.googleapis.com --project=$PROJECT_ID || echo "API already enabled or no permission - continuing..."
-        gcloud services enable discoveryengine.googleapis.com --project=$PROJECT_ID || echo "API already enabled or no permission - continuing..."
-        
-        # Set environment variables for ADK
-        export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
-        export GOOGLE_CLOUD_REGION=$REGION
-        
-        # Deploy agent using ADK
-        echo "Deploying agent with ADK..."
-        adk deploy web --name $AGENT_NAME
+        gcloud services enable run.googleapis.com --project=$PROJECT_ID || echo "Continuing..."
+        gcloud services enable cloudbuild.googleapis.com --project=$PROJECT_ID || echo "Continuing..."
+        gcloud services enable containerregistry.googleapis.com --project=$PROJECT_ID || echo "Continuing..."
 
-    - name: Get Agent Details
+    - name: Build Docker image
       run: |
+        docker build -t gcr.io/$PROJECT_ID/$IMAGE_NAME:$GITHUB_SHA .
+        docker tag gcr.io/$PROJECT_ID/$IMAGE_NAME:$GITHUB_SHA gcr.io/$PROJECT_ID/$IMAGE_NAME:latest
+
+    - name: Push Docker image to Container Registry
+      run: |
+        docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:$GITHUB_SHA
+        docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:latest
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy $SERVICE_NAME \
+          --image gcr.io/$PROJECT_ID/$IMAGE_NAME:$GITHUB_SHA \
+          --platform managed \
+          --region $REGION \
+          --allow-unauthenticated \
+          --set-env-vars GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }} \
+          --memory 1Gi \
+          --cpu 1 \
+          --min-instances 0 \
+          --max-instances 10 \
+          --port 8080
+
+    - name: Get Service URL
+      run: |
+        SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')
         echo "🚀 Agent deployed successfully!"
-        AGENT_ID=$(gcloud ai agents list --region=$REGION --filter="displayName:$AGENT_NAME" --format="value(name)" | head -1)
-        echo "📍 Agent ID: $AGENT_ID"
-        echo "🌐 Agent can be accessed through Vertex AI Console"
-        echo "AGENT_ID=$AGENT_ID" >> $GITHUB_ENV
+        echo "📍 Service URL: $SERVICE_URL"
+        echo "🧪 Test with: curl $SERVICE_URL"
+        echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
 
     - name: Test deployment
       run: |
-        echo "✅ Deployment completed!"
-        echo "Access your agent at: https://console.cloud.google.com/ai/agents"
+        sleep 30
+        SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')
+        echo "Testing deployment at $SERVICE_URL"
+        curl -f "$SERVICE_URL" || echo "Service is starting up..."
