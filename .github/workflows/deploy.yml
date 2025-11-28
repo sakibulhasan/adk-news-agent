@@ -86,7 +86,7 @@ jobs:
           --platform managed \
           --region $REGION \
           --allow-unauthenticated \
-          --set-env-vars GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }},PORT=8080 \
+          --set-env-vars GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }} \
           --memory 2Gi \
           --cpu 2 \
           --timeout 300 \
