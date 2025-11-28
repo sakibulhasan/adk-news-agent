@@ -46,11 +46,21 @@ async def chat(request: NewsRequest):
                 detail="API key not configured"
             )
         
-        # Use the agent's send_message method directly
-        response = root_agent.send_message(request.query)
+        # Use the agent's run_live method
+        result = root_agent.run_live(request.query)
+        
+        # Collect the response text
+        response_text = ""
+        for chunk in result:
+            if hasattr(chunk, 'text'):
+                response_text += chunk.text
+            elif hasattr(chunk, 'content'):
+                response_text += str(chunk.content)
+            else:
+                response_text += str(chunk)
         
         return NewsResponse(
-            response=response.text if hasattr(response, 'text') else str(response),
+            response=response_text,
             status="success"
         )
         
