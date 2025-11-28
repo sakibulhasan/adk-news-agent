@@ -46,12 +46,12 @@ async def chat(request: NewsRequest):
                 detail="API key not configured"
             )
         
-        # Use the agent's run_live method
+        # Use the agent's run_live method and iterate async
         result = root_agent.run_live(request.query)
         
-        # Collect the response text
+        # Collect the response text from async generator
         response_text = ""
-        for chunk in result:
+        async for chunk in result:
             if hasattr(chunk, 'text'):
                 response_text += chunk.text
             elif hasattr(chunk, 'content'):
