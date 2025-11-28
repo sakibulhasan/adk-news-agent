@@ -92,13 +92,13 @@ jobs:
         gcloud services enable aiplatform.googleapis.com --project=$PROJECT_ID || echo "API already enabled or no permission - continuing..."
         gcloud services enable discoveryengine.googleapis.com --project=$PROJECT_ID || echo "API already enabled or no permission - continuing..."
         
+        # Set environment variables for ADK
+        export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
+        export GOOGLE_CLOUD_REGION=$REGION
+        
         # Deploy agent using ADK
-        adk deploy \
-          --project $PROJECT_ID \
-          --region $REGION \
-          --agent-config agent_config.yaml \
-          --source-path . \
-          --agent-name $AGENT_NAME
+        echo "Deploying agent with ADK..."
+        adk deploy web --name $AGENT_NAME
 
     - name: Get Agent Details
       run: |
