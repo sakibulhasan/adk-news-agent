@@ -47,8 +47,11 @@ async def chat(request: NewsRequest):
                 detail="API key not configured"
             )
         
-        # Create session and run agent
-        session = Session(agent=root_agent)
+        # Create session with proper parameters
+        session = Session(
+            agent=root_agent,
+            app_name="news-agent-api"
+        )
         response = session.run(request.query)
         
         return NewsResponse(
