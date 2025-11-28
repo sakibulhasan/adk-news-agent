@@ -55,6 +55,10 @@ gcloud iam service-accounts create github-actions \
 echo -e "${YELLOW}🔐 Granting Vertex AI permissions...${NC}"
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:github-actions@$PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/serviceusage.serviceUsageAdmin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:github-actions@$PROJECT_ID.iam.gserviceaccount.com" \
     --role="roles/aiplatform.admin"
 
 gcloud projects add-iam-policy-binding $PROJECT_ID \

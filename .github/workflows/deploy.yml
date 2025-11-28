@@ -87,9 +87,10 @@ jobs:
 
     - name: Deploy to Vertex AI Agent Engine
       run: |
-        # Enable required APIs
-        gcloud services enable aiplatform.googleapis.com
-        gcloud services enable discoveryengine.googleapis.com
+        # Enable required APIs (if not already enabled)
+        echo "Enabling required APIs..."
+        gcloud services enable aiplatform.googleapis.com --project=$PROJECT_ID || echo "API already enabled or no permission - continuing..."
+        gcloud services enable discoveryengine.googleapis.com --project=$PROJECT_ID || echo "API already enabled or no permission - continuing..."
         
         # Deploy agent using ADK
         adk deploy \
