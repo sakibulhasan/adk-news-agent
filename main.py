@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
+import uuid
 from dotenv import load_dotenv
 from google.adk.sessions import Session
 from news_agent.agent import root_agent
@@ -47,10 +48,12 @@ async def chat(request: NewsRequest):
                 detail="API key not configured"
             )
         
-        # Create session with proper parameters
+        # Create session with all required parameters
         session = Session(
-            agent=root_agent,
-            app_name="news-agent-api"
+            id=str(uuid.uuid4()),
+            app_name="news-agent-api",
+            user_id="api-user",
+            agent=root_agent
         )
         response = session.run(request.query)
         
