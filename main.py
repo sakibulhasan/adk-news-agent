@@ -48,14 +48,15 @@ async def chat(request: NewsRequest):
                 detail="API key not configured"
             )
         
-        # Create session with all required parameters
+        # Create session without agent parameter
         session = Session(
             id=str(uuid.uuid4()),
             app_name="news-agent-api",
-            user_id="api-user",
-            agent=root_agent
+            user_id="api-user"
         )
-        response = session.run(request.query)
+        
+        # Run the agent with the session
+        response = root_agent.run(request.query, session=session)
         
         return NewsResponse(
             response=response.text,
