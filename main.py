@@ -1,9 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
-import uuid
 from dotenv import load_dotenv
-from google.adk.sessions import Session
 from news_agent.agent import root_agent
 import uvicorn
 
@@ -48,25 +46,20 @@ async def chat(request: NewsRequest):
                 detail="API key not configured"
             )
         
-        # Create session without agent parameter
-        session = Session(
-            id=str(uuid.uuid4()),
-            app_name="news-agent-api",
-            user_id="api-user"
-        )
-        
-        # Run the agent with the session
-        response = root_agent.run(request.query, session=session)
+        # Use the agent's send_message method directly
+        response = root_agent.send_message(request.query)
         
         return NewsResponse(
-            response=response.text,
+            response=response.text if hasattr(response, 'text') else str(response),
             status="success"
         )
         
     except Exception as e:
+        import traceback
+        error_detail = f"Error processing request: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(
             status_code=500,
-            detail=f"Error processing request: {str(e)}"
+            detail=error_detail
         )
 
 if __name__ == "__main__":
