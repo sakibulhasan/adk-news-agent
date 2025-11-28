@@ -15,5 +15,5 @@ ENV PORT=8080
 # Expose port
 EXPOSE 8080
 
-# Run ADK web server with proper binding
-CMD adk web --agent news_agent.agent:root_agent --host 0.0.0.0 --port $PORT
+# Run FastAPI application with uvicorn
+CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT}
